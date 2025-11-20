@@ -6,9 +6,45 @@
     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fade-in 0.3s ease-in-out;
+}
+
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  background: linear-gradient(135deg, #220d0d 0%, #0c1f22 100%);
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 19px,
+      rgba(255, 255, 255, 0.05) 19px,
+      rgba(255, 255, 255, 0.05) 20px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 19px,
+      rgba(255, 255, 255, 0.05) 19px,
+      rgba(255, 255, 255, 0.05) 20px
+    ),
+    linear-gradient(135deg, #220d0d 0%, #0c1f22 100%);
+  background-size:
+    20px 20px,
+    20px 20px,
+    100% 100%;
+  background-repeat: repeat;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;

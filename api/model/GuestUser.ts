@@ -1,5 +1,7 @@
 export default interface GuestUser {
   userId: string;
   username: string;
-  randomProfileIconNumber: string;
+  randomProfileIconNumber: number;
+  createdAt: Date;
+  updatedAt: Date;
 }

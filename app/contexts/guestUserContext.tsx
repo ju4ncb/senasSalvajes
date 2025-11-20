@@ -4,7 +4,9 @@ import Swal from "sweetalert2";
 interface GuestUser {
   userId: number;
   username: string;
-  randomProfileIconNumber: string;
+  randomProfileIconNumber: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface GuestUserContextType {
@@ -12,7 +14,7 @@ interface GuestUserContextType {
   login: () => void;
   logout: () => void;
   verifyIfInMatch: () => Promise<number>;
-  joinMatch: (matchId: string) => void;
+  joinMatch: (matchId: string) => Promise<void>;
 }
 
 const GuestUserContext = createContext<GuestUserContextType | null>(null);
@@ -31,10 +33,11 @@ export const GuestUserProvider = ({
   }, []);
 
   const joinMatch = async (matchId: string) => {
+    if (!guestUser) return;
     const res = await fetch("/api/match/join", {
       method: "POST",
       credentials: "include",
-      body: JSON.stringify({ matchId }),
+      body: JSON.stringify({ matchId, player2Id: guestUser.userId }),
     });
     if (!res.ok) {
       Swal.fire({
@@ -71,6 +74,8 @@ export const GuestUserProvider = ({
         userId: data.userId,
         username: data.username,
         randomProfileIconNumber: data.randomProfileIconNumber,
+        createdAt: new Date(data.createdAt),
+        updatedAt: new Date(data.updatedAt),
       });
     } else {
       setGuestUser(null);

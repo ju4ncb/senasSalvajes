@@ -17,6 +17,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       userId: string;
       username: string;
       randomProfileIconNumber: string;
+      createdAt: string;
+      updatedAt: string;
     };
     return res.status(200).json(decoded);
   } catch {

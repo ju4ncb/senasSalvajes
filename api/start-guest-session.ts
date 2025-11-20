@@ -19,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const pool = mysql.createPool(dbConfig);
     const { username } = req.body;
     const randomProfileIconNumber = (
-      Math.floor(Math.random() * 10) + 1
+      Math.floor(Math.random() * 7) + 1
     ).toString();
 
     await pool.execute(
@@ -30,13 +30,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const [result] = await pool.execute("SELECT LAST_INSERT_ID() as userId");
     const userId = (result as any)[0].userId;
 
+    const [result2] = await pool.execute(
+      "SELECT created_at, updated_at FROM guest_users WHERE user_id = ?",
+      [userId]
+    );
+    const createdAt = (result2 as any)[0].created_at;
+    const updatedAt = (result2 as any)[0].updated_at;
+
     const secret = process.env.GUEST_SESSION_JWT_SECRET;
     if (!secret) {
       throw new Error("JWT secret not configured");
     }
 
     const token = jwt.sign(
-      { userId, username, randomProfileIconNumber },
+      { userId, username, randomProfileIconNumber, createdAt, updatedAt },
       secret,
       {
         expiresIn: "1h",
