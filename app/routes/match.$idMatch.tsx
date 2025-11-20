@@ -378,6 +378,9 @@ export default function MatchPage() {
   const [amIPlayerOne, setAmIPlayerOne] = useState<boolean>(false);
   const [matched, setMatched] = useState<boolean>(false);
   const [finished, setFinished] = useState<boolean>(false);
+  
+  // Move useRef to top level of component (cannot be inside useEffect)
+  const lastChangeRef = useRef<number>(Date.now());
 
   const fetchSlots = async () => {
     const slots = (await getAllSlots()) as CardDetails[];
@@ -407,8 +410,6 @@ export default function MatchPage() {
           setAmIPlayerOne(data.amIPlayerOne);
         });
     };
-
-    const lastChangeRef = useRef<number>(Date.now());
 
     const updateMatch = () => {
       if (!match) return;
