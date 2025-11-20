@@ -115,7 +115,7 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
     const matchToken = jwt.sign(
       { matchId },
       process.env.GUEST_SESSION_JWT_SECRET!,
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
 
     const gridSize = 6;
@@ -198,7 +198,7 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
 
     res.setHeader(
       "Set-Cookie",
-      `match_session_token=${matchToken}; HttpOnly; Path=/; Max-Age=3600`
+      `match_session_token=${matchToken}; HttpOnly; Path=/; Max-Age=86400`
     );
 
     return res.status(200).json({
@@ -247,14 +247,14 @@ async function findMatch(req: VercelRequest, res: VercelResponse) {
     const matchToken = jwt.sign(
       { matchId },
       process.env.GUEST_SESSION_JWT_SECRET!,
-      { expiresIn: "1h" }
+      { expiresIn: "24h" }
     );
 
     res.setHeader("Cache-Control", "no-store");
 
     res.setHeader(
       "Set-Cookie",
-      `match_session_token=${matchToken}; HttpOnly; Path=/; Max-Age=3600`
+      `match_session_token=${matchToken}; HttpOnly; Path=/; Max-Age=86400`
     );
 
     return res.status(200).json({ matchId });

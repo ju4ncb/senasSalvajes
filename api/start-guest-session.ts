@@ -46,12 +46,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { userId, username, randomProfileIconNumber, createdAt, updatedAt },
       secret,
       {
-        expiresIn: "1h",
+        expiresIn: "24h",
       }
     );
     res.setHeader(
       "Set-Cookie",
-      `guest_session_token=${token}; HttpOnly; Max-Age=3600; Path=/`
+      `guest_session_token=${token}; HttpOnly; Max-Age=86400; Path=/`
     );
     return res.status(200).json({ message: "Guest session started" });
   } catch (error) {
