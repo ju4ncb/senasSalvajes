@@ -1,4 +1,4 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef } from "react";
 import { useMatch } from "~/contexts/matchContext";
 import { LoadingScreen } from "~/components/LoadingScreen";
 
@@ -206,6 +206,30 @@ const GridCards = ({
     row: number;
     col: number;
   } | null>(null);
+
+  const flippedRef = useRef({ flippedCard1, flippedCard2, cards });
+
+  useEffect(() => {
+    flippedRef.current = { flippedCard1, flippedCard2, cards };
+  }, [flippedCard1, flippedCard2, cards]);
+
+  useEffect(() => {
+    return () => {
+      const { flippedCard1, flippedCard2, cards } = flippedRef.current;
+
+      const slotsToReset: number[] = [];
+      if (flippedCard1) {
+        slotsToReset.push(cards[flippedCard1.row][flippedCard1.col].slotId);
+      }
+      if (flippedCard2) {
+        slotsToReset.push(cards[flippedCard2.row][flippedCard2.col].slotId);
+      }
+
+      if (slotsToReset.length > 0) {
+        resetSlots(slotsToReset);
+      }
+    };
+  }, []);
 
   const handleCardAction = async (index: number) => {
     // Find card in grid
