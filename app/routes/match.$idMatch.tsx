@@ -218,12 +218,6 @@ const GridCards = ({
     col: number;
   } | null>(null);
 
-  const flippedRef = useRef({ flippedCard1, flippedCard2, cards });
-
-  useEffect(() => {
-    flippedRef.current = { flippedCard1, flippedCard2, cards };
-  }, [flippedCard1, flippedCard2, cards]);
-
   // Cleanup effect removed - no need to reset slots on unmount
   // The other player will see the current state when they poll
 
@@ -450,8 +444,12 @@ export default function MatchPage() {
       // Only check turn status frequently
       checkPlayerTurn();
       // Only fetch full state when not our turn
-      if (!((isItFirstPlayerTurn && amIPlayerOne) ||
-            (!isItFirstPlayerTurn && !amIPlayerOne))) {
+      if (
+        !(
+          (isItFirstPlayerTurn && amIPlayerOne) ||
+          (!isItFirstPlayerTurn && !amIPlayerOne)
+        )
+      ) {
         updateMatch();
       }
     }, 3000);
