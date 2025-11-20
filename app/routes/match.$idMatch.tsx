@@ -120,10 +120,13 @@ const HeaderMatch = ({
         </h1>
         <h2>
           {finished
-            ? `Partida terminada, ganador: ${
-                isItFirstPlayerTurn
-                  ? currentMatch.player1username
-                  : currentMatch.player2username
+            ? `Partida terminada, ${
+                player1Score > player2Score
+                  ? `ganó ${currentMatch.player1username}`
+                  : player2Score > player1Score
+                    ? `ganó ${currentMatch.player2username}`
+                    : "Empate."
+              }
               }`
             : `Turno de: ${
                 isItFirstPlayerTurn
@@ -147,6 +150,8 @@ const HeaderMatch = ({
           const [elapsed, setElapsed] = useState(0);
 
           useEffect(() => {
+            if (finished) return;
+
             const interval = setInterval(() => {
               setElapsed(
                 Math.floor(
@@ -158,7 +163,7 @@ const HeaderMatch = ({
             }, 1000);
 
             return () => clearInterval(interval);
-          }, [currentMatch.updatedAt]);
+          }, [currentMatch.updatedAt, finished]);
 
           const minutes = Math.floor(elapsed / 60);
           const seconds = elapsed % 60;
