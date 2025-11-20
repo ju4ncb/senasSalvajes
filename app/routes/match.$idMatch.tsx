@@ -430,15 +430,24 @@ export default function MatchPage() {
         });
     };
 
+    const lastChangeRef = useRef<number>(Date.now());
+
     const updateMatch = () => {
       if (!match) return;
       console.log(matched, isItFirstPlayerTurn, amIPlayerOne);
-      if (
+
+      const shouldUpdate =
         ((isItFirstPlayerTurn && amIPlayerOne) ||
           (!isItFirstPlayerTurn && !amIPlayerOne)) &&
-        !matched
-      )
+        !matched;
+
+      const timeSinceLastChange = Date.now() - lastChangeRef.current;
+
+      if (!shouldUpdate && timeSinceLastChange < 10000) {
         return;
+      }
+
+      lastChangeRef.current = Date.now();
       getCurrentMatch();
       fetchSlots();
       setFinished(match.state === "finished");
