@@ -146,30 +146,34 @@ const HeaderMatch = ({
         isItFirstPlayerTurn={isItFirstPlayerTurn}
       />
       <div className="text-sm text-white/90 bg-white/10 px-3 py-1.5 rounded-full">
-        <span className="font-semibold">Tiempo: </span>
+        <span className="font-semibold">Tiempo restante: </span>
         {(() => {
-          const [elapsed, setElapsed] = useState(0);
+          const [remaining, setRemaining] = useState(60);
 
           useEffect(() => {
             if (finished) return;
 
+            const startTime = new Date(currentMatch.updatedAt).getTime();
+            const targetTime = startTime + 60 * 1000; // 1 minute from start
+
             const interval = setInterval(() => {
-              setElapsed(
-                Math.floor(
-                  (new Date().getTime() -
-                    new Date(currentMatch.updatedAt).getTime()) /
-                    1000
-                )
+              const now = new Date().getTime();
+              const timeLeft = Math.max(
+                0,
+                Math.floor((targetTime - now) / 1000)
               );
-            }, 2000);
+              setRemaining(timeLeft);
+            }, 1000);
 
             return () => clearInterval(interval);
           }, [currentMatch.updatedAt, finished]);
 
-          const minutes = Math.floor(elapsed / 60);
-          const seconds = elapsed % 60;
+          const minutes = Math.floor(remaining / 60);
+          const seconds = remaining % 60;
           return (
-            <span className="font-mono font-bold text-white">
+            <span
+              className={`font-mono font-bold ${remaining <= 10 ? "text-red-400" : "text-white"}`}
+            >
               {minutes}:{seconds.toString().padStart(2, "0")}
             </span>
           );
@@ -309,7 +313,7 @@ const GridCards = ({
           key={index}
           className={`aspect-square rounded-md flex items-center justify-center transition-colors duration-300 ${
             state === "matched" ? "border-4 border-green-500" : ""
-          } ${state === "hidden" && "cursor-pointer"} ${amIPlayerOne && !isItFirstPlayerTurn ? "bg-gray-400" : "bg-gray-200"}`}
+          } ${state === "hidden" && "cursor-pointer"} ${(amIPlayerOne && !isItFirstPlayerTurn) || (!amIPlayerOne && isItFirstPlayerTurn) ? "bg-gray-200" : "bg-gray-400"}`}
           onClick={() => handleCardAction(index)}
         >
           {state === "hidden" ? (
