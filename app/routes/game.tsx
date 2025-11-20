@@ -5,6 +5,7 @@ import InfoCard from "~/components/InfoCard";
 import Swal from "sweetalert2";
 import { useEffect, useState } from "react";
 import { LoadingScreen } from "~/components/LoadingScreen";
+import { useNavigate } from "react-router";
 
 // Import all Icons statically
 import icon1 from "~/assets/profile-icons/icon-1.png";
@@ -125,6 +126,8 @@ export default function Game() {
   //   return <LoadingScreen />;
   // }
 
+  const navigate = useNavigate();
+
   const { userId, username, randomProfileIconNumber } = guestUser ?? {
     userId: -1,
     username: "Mistery Guy",
@@ -152,7 +155,7 @@ export default function Game() {
     setIsLookingForMatch(true);
     // If already in a match, redirect to that match
     if (matchIdJoined !== -1) {
-      window.location.assign(`/match/${matchIdJoined}`);
+      navigate(`/match/${matchIdJoined}`);
       return;
     }
     // Otherwise, see if there is any available match to join
@@ -165,7 +168,7 @@ export default function Game() {
       const data = await res.json();
       if (data.matchId) {
         await joinMatch(data.matchId);
-        window.location.assign(`/match/${data.matchId}`);
+        navigate(`/match/${data.matchId}`);
         return;
       }
     }
