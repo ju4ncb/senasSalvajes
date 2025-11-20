@@ -122,9 +122,9 @@ const Leaderboard = () => {
 export default function Game() {
   const { guestUser, verifyIfInMatch, joinMatch } = useGuestUser();
 
-  // if (!guestUser) {
-  //   return <LoadingScreen />;
-  // }
+  if (!guestUser) {
+    return <LoadingScreen />;
+  }
 
   const navigate = useNavigate();
 
@@ -159,10 +159,13 @@ export default function Game() {
       return;
     }
     // Otherwise, see if there is any available match to join
-    const res = await fetch("/api/match?action=find", {
-      method: "GET",
-      credentials: "include",
-    });
+    const res = await fetch(
+      `/api/match?action=find&excludePlayerId=${userId}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
 
     if (res.ok) {
       const data = await res.json();

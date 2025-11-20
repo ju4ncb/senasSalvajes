@@ -119,8 +119,10 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
 
 async function findMatch(req: VercelRequest, res: VercelResponse) {
   const pool = getDB();
+  const excludePlayerId = req.query.excludePlayerId;
   const [rows] = await pool.execute(
-    "SELECT * FROM matches WHERE state = 'waiting'"
+    "SELECT * FROM matches WHERE state = 'waiting' AND player1_id != ? LIMIT 1",
+    [excludePlayerId]
   );
 
   if (!rows || (Array.isArray(rows) && rows.length === 0))
