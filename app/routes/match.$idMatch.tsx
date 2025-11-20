@@ -160,7 +160,7 @@ const HeaderMatch = ({
                     1000
                 )
               );
-            }, 1000);
+            }, 2000);
 
             return () => clearInterval(interval);
           }, [currentMatch.updatedAt, finished]);
@@ -307,7 +307,7 @@ const GridCards = ({
           setCards(resetCards);
           setFlippedCard1(null);
           setFlippedCard2(null);
-        }, 2000);
+        }, 3000);
       }
     }
 
@@ -461,7 +461,7 @@ export default function MatchPage() {
     const interval = setInterval(() => {
       checkPlayerTurn();
       updateMatch();
-    }, 1000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [match, getCurrentMatch, matched, isItFirstPlayerTurn, amIPlayerOne]);
