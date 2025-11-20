@@ -296,7 +296,7 @@ const GridCards = ({
           setCards(resetCards);
           setFlippedCard1(null);
           setFlippedCard2(null);
-        }, 1000);
+        }, 2000);
       }
     }
 
