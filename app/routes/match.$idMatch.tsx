@@ -427,6 +427,7 @@ export default function MatchPage() {
         INACTIVITY_LIMIT
       );
       if (timeSinceLastActivity >= INACTIVITY_LIMIT && !finished) {
+        setFinished(true);
         import("sweetalert2").then(({ default: Swal }) => {
           Swal.fire({
             title: "Partida cancelada",
