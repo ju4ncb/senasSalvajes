@@ -505,6 +505,8 @@ async function getAllSlots(req: VercelRequest, res: VercelResponse) {
       description: row.description,
     }));
 
+    res.setHeader("Cache-Control", "no-store");
+
     return res.status(200).json(slots);
   } finally {
     await pool.end();
