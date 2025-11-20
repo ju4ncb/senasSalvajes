@@ -91,7 +91,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (req.method !== "GET")
           return res.status(405).json({ message: "Method not allowed" });
 
-        return getMatch(req, res);
+        return getCurrentMatch(req, res);
 
       default:
         return res.status(400).json({ message: "Invalid action" });
@@ -310,9 +310,23 @@ async function cancelMatch(req: VercelRequest, res: VercelResponse) {
   return res.status(200).json({ message: "Match cancelled successfully" });
 }
 
-async function getMatch(req: VercelRequest, res: VercelResponse) {
+async function getCurrentMatch(req: VercelRequest, res: VercelResponse) {
   const pool = getDB();
-  const { matchId } = req.query;
+  const matchToken = req.cookies?.["match_session_token"];
+
+  if (!matchToken) {
+    return res.status(400).json({ message: "No match token provided" });
+  }
+
+  let decodedMatch: { matchId: string };
+  try {
+    const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+    decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
+  } catch {
+    return res.status(401).json({ message: "Invalid match token" });
+  }
+
+  const matchId = decodedMatch.matchId;
 
   const [rows] = await pool.execute(
     `SELECT M.*, GU.username AS player1_name, GU2.username AS player2_name 

@@ -20,15 +20,14 @@ interface MatchFull extends Match {
 }
 
 export default function MatchPage() {
-  const { matchId } = useParams(); // obtiene el valor dinámico de la URL
-  const { match, getMatchById } = useMatch();
+  const { match, getCurrentMatch } = useMatch();
   const [currentMatch, setCurrentMatch] = useState<MatchFull | null>(null);
 
   useEffect(() => {
-    if (!match && matchId) {
-      getMatchById(Number(matchId));
+    if (!match) {
+      getCurrentMatch();
     }
-  }, [matchId]);
+  }, []);
 
   useEffect(() => {
     if (match) {

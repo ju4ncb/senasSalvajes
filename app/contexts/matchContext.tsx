@@ -22,7 +22,7 @@ interface MatchContextType {
   createMatch: (player1Id: number) => Promise<number>;
   finishMatch: (matchId: number) => Promise<void>;
   cancelMatch: (matchId: number) => Promise<void>;
-  getMatchById: (matchId: number) => Promise<void>;
+  getCurrentMatch: () => Promise<void>;
 }
 
 const MatchContext = createContext<MatchContextType | null>(null);
@@ -49,8 +49,8 @@ export const MatchProvider = ({ children }: { children: React.ReactNode }) => {
     return "";
   };
 
-  const getMatchById = async (matchId: number) => {
-    const res = await fetch(`/api/match?action=get-match&matchId=${matchId}`, {
+  const getCurrentMatch = async () => {
+    const res = await fetch(`/api/match?action=get-current-match`, {
       method: "GET",
       credentials: "include",
     });
@@ -110,7 +110,7 @@ export const MatchProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <MatchContext.Provider
-      value={{ match, createMatch, getMatchById, finishMatch, cancelMatch }}
+      value={{ match, createMatch, getCurrentMatch, finishMatch, cancelMatch }}
     >
       {children}
     </MatchContext.Provider>
