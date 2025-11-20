@@ -19,9 +19,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       `SELECT GU.user_id, GU.username, SUM(scores.score) as total_score
       FROM guest_users GU
       JOIN (
-      SELECT player1_id as user_id, player1_score as score FROM matches
+      SELECT player1_id as user_id, player1_score as score FROM matches WHERE state = 'finished'
       UNION ALL
-      SELECT player2_id as user_id, player2_score as score FROM matches
+      SELECT player2_id as user_id, player2_score as score FROM matches WHERE state = 'finished'
       ) scores ON GU.user_id = scores.user_id
       GROUP BY GU.user_id, GU.username
       ORDER BY total_score DESC
