@@ -1,5 +1,6 @@
 .DS_Store
 .env
+db-script.sql
 /node_modules/
 
 # React Router

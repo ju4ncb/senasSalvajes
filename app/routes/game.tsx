@@ -7,14 +7,6 @@ import { useEffect, useState } from "react";
 import { LoadingScreen } from "~/components/LoadingScreen";
 import { useNavigate } from "react-router";
 
-// Import all Icons statically
-import icon1 from "~/assets/profile-icons/icon-1.png";
-import icon2 from "~/assets/profile-icons/icon-2.png";
-import icon3 from "~/assets/profile-icons/icon-3.png";
-import icon4 from "~/assets/profile-icons/icon-4.png";
-import icon5 from "~/assets/profile-icons/icon-5.png";
-import icon6 from "~/assets/profile-icons/icon-6.png";
-import icon7 from "~/assets/profile-icons/icon-7.png";
 import { Play, Trophy, X } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
@@ -34,16 +26,6 @@ const ProfileCard = ({
   username: string;
   profileIconNumber: number;
 }) => {
-  // Map profile icon numbers to imported images
-  const profileIcons: { [key: number]: string } = {
-    1: icon1,
-    2: icon2,
-    3: icon3,
-    4: icon4,
-    5: icon5,
-    6: icon6,
-    7: icon7,
-  };
   return (
     <div
       className="flex flex-col items-center bg-white/20 text-red-50 p-4 rounded-lg shadow-lg my-4"
@@ -51,7 +33,7 @@ const ProfileCard = ({
     >
       <div className="flex flex-col sm:flex-row items-center space-x-2 sm:space-x-4 gap-2">
         <img
-          src={profileIcons[profileIconNumber]}
+          src={`/assets/profile-icons/icon-${profileIconNumber}.png`}
           alt={`${username}'s profile icon`}
           className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full"
         />

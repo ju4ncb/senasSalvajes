@@ -93,6 +93,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         return getCurrentMatch(req, res);
 
+      // -------------------------------------------------
+      // GET ALL SLOTS
+      // -------------------------------------------------
+      case "get-all-slots":
+        if (req.method !== "GET")
+          return res.status(405).json({ message: "Method not allowed" });
+
+        return getAllSlots(req, res);
+
+      /* GAME ACTIONS */
+
+      // -------------------------------------------------
+      // FLIP SLOT
+      // -------------------------------------------------
+      case "flip-slot":
+        if (req.method !== "POST")
+          return res.status(405).json({ message: "Method not allowed" });
+        return flipSlot(req, res);
+
+      // -------------------------------------------------
+      // RESET SLOT
+      // -------------------------------------------------
+      case "reset-slots":
+        if (req.method !== "POST")
+          return res.status(405).json({ message: "Method not allowed" });
+        return resetSlots(req, res);
+
+      // -------------------------------------------------
+      // MARK SLOTS AS MATCHED
+      // -------------------------------------------------
+      case "mark-slots-as-matched":
+        if (req.method !== "POST")
+          return res.status(405).json({ message: "Method not allowed" });
+        return markSlotsAsMatched(req, res);
+
       default:
         return res.status(400).json({ message: "Invalid action" });
     }
@@ -116,6 +151,102 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
   );
 
   const matchId = (result as any).insertId;
+
+  // Save matchId in session as well
+  const matchToken = jwt.sign(
+    { matchId },
+    process.env.GUEST_SESSION_JWT_SECRET!,
+    { expiresIn: "1h" }
+  );
+
+  // ---- Generate Grid Seed Here ----
+  const gridSize = 6;
+  const totalPairs = 18;
+
+  interface Card {
+    value: number;
+    imageType: string;
+  }
+
+  // Step 1: pick 18 unique numbers from 1–22
+  const allNums = Array.from({ length: 22 }, (_, i) => i + 1);
+  const chosen = [];
+
+  while (chosen.length < totalPairs) {
+    const idx = Math.floor(Math.random() * allNums.length);
+    chosen.push(allNums.splice(idx, 1)[0]);
+  }
+
+  // Step 2: create pairs and shuffle
+  const cards = [] as Card[];
+  chosen.forEach((v) => {
+    cards.push({ value: v, imageType: `S` });
+    cards.push({ value: v, imageType: `F` });
+  });
+
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+
+  // Step 3: Create Description mapping
+  const descriptionMap: { [key: number]: string } = {
+    1: "Araña",
+    2: "Ballena",
+    3: "Burro",
+    4: "Caballo",
+    5: "Cabra",
+    6: "Camello",
+    7: "Canguro",
+    8: "Cangrejo",
+    9: "Caracol",
+    10: "Cerdo",
+    11: "Cocodrilo",
+    12: "Conejo",
+    13: "Cucaracha",
+    14: "Culebra",
+    15: "Elefante",
+    16: "Gallina",
+    17: "Gallo",
+    18: "Gato",
+    19: "Gorila",
+    20: "Gusano",
+    21: "Hipopótamo",
+    22: "Hormiga",
+  };
+
+  // Step 4: insert 36 slots into DB
+  // States are: hidden, revealed, matched
+  const insertSlotSQL = `
+    INSERT INTO match_grid_slots
+    (match_id, value, image_type, image_url, state, x_position, y_position, description)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      const card = cards[i * gridSize + j];
+      const imageUrl = card.imageType.endsWith("S")
+        ? `/assets/signs/sign-${card.value}.jpg`
+        : `/assets/figures/figure-${card.value}.jpg`;
+      const description = descriptionMap[card.value];
+      await pool.execute(insertSlotSQL, [
+        matchId,
+        card.value,
+        card.imageType,
+        imageUrl,
+        "hidden",
+        i,
+        j,
+        description,
+      ]);
+    }
+  }
+
+  res.setHeader(
+    "Set-Cookie",
+    `match_session_token=${matchToken}; HttpOnly; Path=/; Max-Age=3600`
+  );
 
   return res.status(200).json({
     matchId,
@@ -295,6 +426,11 @@ async function finishMatch(req: VercelRequest, res: VercelResponse) {
     ["finished", matchId, "playing"]
   );
 
+  res.setHeader(
+    "Set-Cookie",
+    "match_session_token=; HttpOnly; Path=/; Max-Age=0"
+  );
+
   return res.status(200).json({ message: "Match finished successfully" });
 }
 
@@ -305,6 +441,11 @@ async function cancelMatch(req: VercelRequest, res: VercelResponse) {
   await pool.execute(
     "UPDATE matches SET state = ? WHERE match_id = ? AND state IN (?, ?)",
     ["cancelled", matchId, "waiting", "playing"]
+  );
+
+  res.setHeader(
+    "Set-Cookie",
+    "match_session_token=; HttpOnly; Path=/; Max-Age=0"
   );
 
   return res.status(200).json({ message: "Match cancelled successfully" });
@@ -329,7 +470,7 @@ async function getCurrentMatch(req: VercelRequest, res: VercelResponse) {
   const matchId = decodedMatch.matchId;
 
   const [rows] = await pool.execute(
-    `SELECT M.*, GU.username AS player1_name, GU2.username AS player2_name 
+    `SELECT M.*, GU.username AS player1_name, GU2.username AS player2_name, GU.icon_number AS player1_icon_number, GU2.icon_number AS player2_icon_number
      FROM matches M
      INNER JOIN guest_users GU ON M.player1_id = GU.user_id 
      LEFT JOIN guest_users GU2 ON M.player2_id = GU2.user_id 
@@ -348,8 +489,145 @@ async function getCurrentMatch(req: VercelRequest, res: VercelResponse) {
     player2Id: (match as any).player2_id,
     player1username: (match as any).player1_name,
     player2username: (match as any).player2_name,
+    player1IconNumber: (match as any).player1_icon_number,
+    player2IconNumber: (match as any).player2_icon_number,
     player1Score: (match as any).player1_score,
     player2Score: (match as any).player2_score,
     state: (match as any).state,
   });
+}
+
+async function getAllSlots(req: VercelRequest, res: VercelResponse) {
+  const pool = getDB();
+  const matchToken = req.cookies?.["match_session_token"];
+
+  if (!matchToken) {
+    return res.status(400).json({ message: "No match token provided" });
+  }
+
+  let decodedMatch: { matchId: string };
+  try {
+    const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+    decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
+  } catch {
+    return res.status(401).json({ message: "Invalid match token" });
+  }
+
+  const matchId = decodedMatch.matchId;
+  const [rows] = await pool.execute(
+    `SELECT slot_id, value, image_type, image_url, state, x_position, y_position, description
+     FROM match_grid_slots
+     WHERE match_id = ?`,
+    [matchId]
+  );
+
+  if (!rows || (Array.isArray(rows) && rows.length === 0))
+    return res.status(404).json({ message: "No slots found for this match" });
+
+  const slots = (rows as any[]).map((row) => ({
+    slotId: row.slot_id,
+    value: row.value,
+    imageType: row.image_type,
+    imageUrl: row.image_url,
+    state: row.state,
+    xPosition: row.x_position,
+    yPosition: row.y_position,
+    description: row.description,
+  }));
+
+  return res.status(200).json(slots);
+}
+
+async function flipSlot(req: VercelRequest, res: VercelResponse) {
+  const pool = getDB();
+  const { slotId } = req.body;
+  await pool.execute(
+    "UPDATE match_grid_slots SET state = ? WHERE slot_id = ?",
+    ["revealed", slotId]
+  );
+
+  return res.status(200).json({ message: "Slot flipped successfully" });
+}
+
+async function resetSlots(req: VercelRequest, res: VercelResponse) {
+  const pool = getDB();
+  const { slotIds } = req.body; // Expecting an array of slot IDs
+  const placeholders = slotIds.map(() => "?").join(", ");
+
+  await pool.execute(
+    `UPDATE match_grid_slots SET state = ? WHERE slot_id IN (${placeholders})`,
+    ["hidden", ...slotIds]
+  );
+  return res.status(200).json({ message: "Slots reset successfully" });
+}
+
+async function markSlotsAsMatched(req: VercelRequest, res: VercelResponse) {
+  const pool = getDB();
+
+  const guestSessionToken = req.cookies?.["guest_session_token"];
+  const matchToken = req.cookies?.["match_session_token"];
+
+  if (!guestSessionToken) {
+    return res.status(401).json({ message: "No guest session token provided" });
+  }
+
+  if (!matchToken) {
+    return res.status(400).json({ message: "No match token provided" });
+  }
+
+  let decodedGuest: { userId: string };
+  let decodedMatch: { matchId: string };
+
+  try {
+    const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+    decodedGuest = jwt.verify(guestSessionToken, secret) as {
+      userId: string;
+    };
+  } catch {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+
+  try {
+    const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+    decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
+  } catch {
+    return res.status(401).json({ message: "Invalid match token" });
+  }
+
+  const matchId = decodedMatch.matchId;
+
+  const [rows] = await pool.execute(
+    "SELECT * FROM matches WHERE match_id = ?",
+    [matchId]
+  );
+  const match = (rows as any[])[0];
+
+  if (
+    decodedGuest.userId !== (match as any).player1_id &&
+    decodedGuest.userId !== (match as any).player2_id
+  ) {
+    return res
+      .status(403)
+      .json({ message: "User not authorized to mark slots as matched" });
+  }
+
+  const { slotIds } = req.body; // Expecting an array of slot IDs
+  const placeholders = slotIds.map(() => "?").join(", ");
+  await pool.execute(
+    `UPDATE match_grid_slots SET state = ? WHERE slot_id IN (${placeholders})`,
+    ["matched", ...slotIds]
+  );
+
+  // Add a point to the player
+  const isPlayer1 = decodedGuest.userId === (match as any).player1_id;
+  const scoreField = isPlayer1 ? "player1_score" : "player2_score";
+
+  await pool.execute(
+    `UPDATE matches SET ${scoreField} = ${scoreField} + 1 WHERE match_id = ?`,
+    [matchId]
+  );
+
+  return res
+    .status(200)
+    .json({ message: "Slots marked as matched successfully" });
 }

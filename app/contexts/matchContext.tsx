@@ -15,6 +15,8 @@ interface Match {
 interface MatchFull extends Match {
   player1username: string;
   player2username: string;
+  player1IconNumber: number;
+  player2IconNumber: number;
 }
 
 interface MatchContextType {
@@ -22,7 +24,11 @@ interface MatchContextType {
   createMatch: (player1Id: number) => Promise<number>;
   finishMatch: (matchId: number) => Promise<void>;
   cancelMatch: (matchId: number) => Promise<void>;
+  getAllSlots: () => Promise<any[]>;
   getCurrentMatch: () => Promise<void>;
+  flipSlot: (slotId: number) => Promise<void>;
+  resetSlots: (slotIds: number[]) => Promise<void>;
+  markSlotsAsMatched: (slotIds: number[]) => Promise<void>;
 }
 
 const MatchContext = createContext<MatchContextType | null>(null);
@@ -67,6 +73,24 @@ export const MatchProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const getAllSlots = async () => {
+    const res = await fetch(`/api/match?action=get-all-slots`, {
+      method: "GET",
+      credentials: "include",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data;
+    } else {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo obtener la información de las ranuras. Por favor, recarga la página e intenta de nuevo.",
+      });
+      return [];
+    }
+  };
+
   const finishMatch = async (matchId: number) => {
     const res = await fetch("/api/match?action=finish", {
       method: "POST",
@@ -108,9 +132,52 @@ export const MatchProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const flipSlot = async (slotId: number) => {
+    await fetch("/api/match?action=flip-slot", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ slotId }),
+    });
+  };
+
+  const resetSlots = async (slotIds: number[]) => {
+    await fetch("/api/match?action=reset-slots", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ slotIds }),
+    });
+  };
+
+  const markSlotsAsMatched = async (slotIds: number[]) => {
+    await fetch("/api/match?action=mark-slots-as-matched", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ slotIds }),
+    });
+  };
+
   return (
     <MatchContext.Provider
-      value={{ match, createMatch, getCurrentMatch, finishMatch, cancelMatch }}
+      value={{
+        match,
+        createMatch,
+        getCurrentMatch,
+        finishMatch,
+        cancelMatch,
+        getAllSlots,
+        flipSlot,
+        resetSlots,
+        markSlotsAsMatched,
+      }}
     >
       {children}
     </MatchContext.Provider>
