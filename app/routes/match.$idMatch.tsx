@@ -313,7 +313,7 @@ const GridCards = ({
           key={index}
           className={`aspect-square rounded-md flex items-center justify-center transition-colors duration-300 ${
             state === "matched" ? "border-4 border-green-500" : ""
-          } ${state === "hidden" && "cursor-pointer"} ${(amIPlayerOne && !isItFirstPlayerTurn) || (!amIPlayerOne && isItFirstPlayerTurn) ? "bg-gray-200" : "bg-gray-400"}`}
+          } ${state === "hidden" && "cursor-pointer"} ${(amIPlayerOne && !isItFirstPlayerTurn) || (!amIPlayerOne && isItFirstPlayerTurn) ? "bg-gray-400" : "bg-gray-200"}`}
           onClick={() => handleCardAction(index)}
         >
           {state === "hidden" ? (
