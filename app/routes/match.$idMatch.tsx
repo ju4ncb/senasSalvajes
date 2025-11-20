@@ -166,12 +166,16 @@ const HeaderMatch = ({
 
 const GridCards = ({
   cards,
+  isItFirstPlayerTurn,
+  amIPlayerOne,
   setCards,
   flipSlot,
   resetSlots,
   markSlotsAsMatched,
 }: {
   cards: CardDetails[][];
+  isItFirstPlayerTurn: boolean;
+  amIPlayerOne: boolean;
   setCards: React.Dispatch<React.SetStateAction<CardDetails[][]>>;
   flipSlot: (slotId: number) => Promise<void>;
   resetSlots: (slotIds: number[]) => Promise<void>;
@@ -186,7 +190,7 @@ const GridCards = ({
     col: number;
   } | null>(null);
 
-  const handleCardAction = (index: number) => {
+  const handleCardAction = async (index: number) => {
     // Find card in grid
     const row = Math.floor(index / cards[0].length);
     const col = index % cards[0].length;
@@ -200,16 +204,24 @@ const GridCards = ({
     // If both cards are already flipped, do nothing
     if (flippedCard1 && flippedCard2) return;
 
+    // Check if it's the player's turn
+    if (
+      (amIPlayerOne && !isItFirstPlayerTurn) ||
+      (!amIPlayerOne && isItFirstPlayerTurn)
+    ) {
+      return;
+    }
+
     // Reveal card
     const newCards = cards.map((r) => r.slice());
     newCards[row][col].state = "revealed";
 
     if (!flippedCard1) {
       setFlippedCard1({ row, col });
-      flipSlot(cards[row][col].slotId);
+      await flipSlot(cards[row][col].slotId);
     } else if (!flippedCard2) {
       setFlippedCard2({ row, col });
-      flipSlot(cards[row][col].slotId);
+      await flipSlot(cards[row][col].slotId);
 
       // Check for match
       const firstCard = newCards[flippedCard1.row][flippedCard1.col];
@@ -218,12 +230,12 @@ const GridCards = ({
         // It's a match
         newCards[flippedCard1.row][flippedCard1.col].state = "matched";
         newCards[row][col].state = "matched";
-        markSlotsAsMatched([firstCard.slotId, secondCard.slotId]);
+        await markSlotsAsMatched([firstCard.slotId, secondCard.slotId]);
         setFlippedCard1(null);
         setFlippedCard2(null);
       } else {
         // Not a match - hide cards after a delay
-        resetSlots([firstCard.slotId, secondCard.slotId]);
+        await resetSlots([firstCard.slotId, secondCard.slotId]);
         setTimeout(() => {
           const resetCards = cards.map((r) => r.slice());
           resetCards[flippedCard1.row][flippedCard1.col].state = "hidden";
@@ -267,12 +279,16 @@ const GridCards = ({
 
 const MatchContent = ({
   cards,
+  isItFirstPlayerTurn,
+  amIPlayerOne,
   setCards,
   flipSlot,
   resetSlots,
   markSlotsAsMatched,
 }: {
   cards: CardDetails[][];
+  isItFirstPlayerTurn: boolean;
+  amIPlayerOne: boolean;
   setCards: React.Dispatch<React.SetStateAction<CardDetails[][]>>;
   flipSlot: (slotId: number) => Promise<void>;
   resetSlots: (slotIds: number[]) => Promise<void>;
@@ -286,6 +302,8 @@ const MatchContent = ({
         flipSlot={flipSlot}
         resetSlots={resetSlots}
         markSlotsAsMatched={markSlotsAsMatched}
+        isItFirstPlayerTurn={isItFirstPlayerTurn}
+        amIPlayerOne={amIPlayerOne}
       />
     </div>
   );
@@ -302,6 +320,40 @@ export default function MatchPage() {
   } = useMatch();
   const [isItFirstPlayerTurn, setIsItFirstPlayerTurn] =
     useState<boolean>(false);
+  const [amIPlayerOne, setAmIPlayerOne] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!match) return;
+
+    const checkPlayerTurn = () => {
+      fetch("/api/match?action=get-current-player", {
+        method: "GET",
+        credentials: "include",
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          setIsItFirstPlayerTurn(data.isFirstPlayerTurn);
+          setAmIPlayerOne(data.amIPlayerOne);
+        });
+    };
+
+    const updateMatch = () => {
+      getCurrentMatch();
+    };
+
+    // Initial check
+    checkPlayerTurn();
+    updateMatch();
+
+    // Poll every second
+    const interval = setInterval(() => {
+      checkPlayerTurn();
+      updateMatch();
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [match, getCurrentMatch]);
+
   const [cards, setCards] = useState<CardDetails[][]>([]);
   const [player1Score, setPlayer1Score] = useState<number>(0); // They are changed in the backend when marking slots as matched
   const [player2Score, setPlayer2Score] = useState<number>(0); // They are changed in the backend when marking slots as matched
@@ -427,6 +479,8 @@ export default function MatchPage() {
       />
       <MatchContent
         cards={cards}
+        isItFirstPlayerTurn={isItFirstPlayerTurn}
+        amIPlayerOne={amIPlayerOne}
         setCards={setCards}
         flipSlot={flipSlot}
         resetSlots={resetSlots}
