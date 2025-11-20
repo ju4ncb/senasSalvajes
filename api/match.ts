@@ -173,9 +173,10 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
     const insertSlotSQL = `
       INSERT INTO match_grid_slots
       (match_id, value, image_type, image_url, state, x_position, y_position, description)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES ?
     `;
 
+    const slotValues = [];
     for (let i = 0; i < gridSize; i++) {
       for (let j = 0; j < gridSize; j++) {
         const card = cards[i * gridSize + j];
@@ -183,7 +184,7 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
           ? `/assets/signs/sign-${card.value}.jpg`
           : `/assets/figures/figure-${card.value}.jpg`;
         const description = descriptionMap[card.value];
-        await pool.execute(insertSlotSQL, [
+        slotValues.push([
           matchId,
           card.value,
           card.imageType,
@@ -195,6 +196,8 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
         ]);
       }
     }
+
+    await pool.query(insertSlotSQL, [slotValues]);
 
     res.setHeader(
       "Set-Cookie",
