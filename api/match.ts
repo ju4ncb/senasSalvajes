@@ -101,7 +101,7 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
   const { player1Id } = req.body;
 
   const [result] = await pool.execute(
-    "INSERT INTO matches (player1_id, player1_score, player2_id, player2_score, status) VALUES (?, ?, ?, ?, ?)",
+    "INSERT INTO matches (player1_id, player1_score, player2_id, player2_score, state) VALUES (?, ?, ?, ?, ?)",
     [player1Id, 0, null, 0, "waiting"]
   );
 
@@ -113,14 +113,14 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
     player1Score: 0,
     player2Id: null,
     player2Score: 0,
-    status: "waiting",
+    state: "waiting",
   });
 }
 
 async function findMatch(req: VercelRequest, res: VercelResponse) {
   const pool = getDB();
   const [rows] = await pool.execute(
-    "SELECT * FROM matches WHERE status = 'waiting'"
+    "SELECT * FROM matches WHERE state = 'waiting'"
   );
 
   if (!rows || (Array.isArray(rows) && rows.length === 0))
@@ -136,8 +136,8 @@ async function joinMatch(req: VercelRequest, res: VercelResponse) {
   const { matchId, player2Id } = req.body;
 
   await pool.execute(
-    "UPDATE matches SET player2_id = ?, status = ? WHERE match_id = ? AND status = ?",
-    [player2Id, "in_progress", matchId, "waiting"]
+    "UPDATE matches SET player2_id = ?, state = ? WHERE match_id = ? AND state = ?",
+    [player2Id, "playing", matchId, "waiting"]
   );
 
   return res.status(200).json({ message: "Joined match successfully" });
@@ -148,7 +148,7 @@ async function verifyMatch(req: VercelRequest, res: VercelResponse) {
   const { guestUserId } = req.body;
 
   const [rows] = await pool.execute(
-    "SELECT * FROM matches WHERE (player1_id = ? OR player2_id = ?) AND status = 'in_progress'",
+    "SELECT * FROM matches WHERE (player1_id = ? OR player2_id = ?) AND state = 'playing'",
     [guestUserId, guestUserId]
   );
 
@@ -166,8 +166,8 @@ async function finishMatch(req: VercelRequest, res: VercelResponse) {
   const { matchId } = req.body;
 
   await pool.execute(
-    "UPDATE matches SET status = ? WHERE match_id = ? AND status = ?",
-    ["finished", matchId, "in_progress"]
+    "UPDATE matches SET state = ? WHERE match_id = ? AND state = ?",
+    ["finished", matchId, "playing"]
   );
 
   return res.status(200).json({ message: "Match finished successfully" });
@@ -178,8 +178,8 @@ async function cancelMatch(req: VercelRequest, res: VercelResponse) {
   const { matchId } = req.body;
 
   await pool.execute(
-    "UPDATE matches SET status = ? WHERE match_id = ? AND status IN (?, ?)",
-    ["cancelled", matchId, "waiting", "in_progress"]
+    "UPDATE matches SET state = ? WHERE match_id = ? AND state IN (?, ?)",
+    ["cancelled", matchId, "waiting", "playing"]
   );
 
   return res.status(200).json({ message: "Match cancelled successfully" });
@@ -211,6 +211,6 @@ async function getMatch(req: VercelRequest, res: VercelResponse) {
     player2username: (match as any).player2_name,
     player1Score: (match as any).player1_score,
     player2Score: (match as any).player2_score,
-    status: (match as any).status,
+    state: (match as any).state,
   });
 }
