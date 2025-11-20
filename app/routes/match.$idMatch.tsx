@@ -1,6 +1,7 @@
 import { useState, useEffect, use, useRef } from "react";
 import { useMatch } from "~/contexts/matchContext";
 import { LoadingScreen } from "~/components/LoadingScreen";
+import { time } from "console";
 
 interface Match {
   matchId: number;
@@ -417,6 +418,12 @@ export default function MatchPage() {
 
     const checkInactivity = () => {
       const timeSinceLastActivity = Date.now() - lastActivityRef.current;
+      console.log(
+        "Checking inactivity...",
+        timeSinceLastActivity >= INACTIVITY_LIMIT && !finished,
+        timeSinceLastActivity,
+        INACTIVITY_LIMIT
+      );
       if (timeSinceLastActivity >= INACTIVITY_LIMIT && !finished) {
         cancelMatch();
         window.location.href = "/game";
