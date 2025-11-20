@@ -22,6 +22,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     };
     return res.status(200).json(decoded);
   } catch {
+    res.setHeader(
+      "Set-Cookie",
+      "guest_session_token=; Max-Age=0; Path=/; HttpOnly"
+    );
     return res.status(401).json({ message: "Invalid token" });
   }
 }

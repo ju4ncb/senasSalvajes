@@ -232,6 +232,10 @@ async function findMatch(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decoded = jwt.verify(token, secret) as { userId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "guest_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid token" });
     }
 
@@ -289,6 +293,10 @@ async function joinMatch(req: VercelRequest, res: VercelResponse) {
         userId: string;
       };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "guest_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid token" });
     }
 
@@ -299,6 +307,10 @@ async function joinMatch(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "match_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid match token" });
     }
 
@@ -329,6 +341,10 @@ async function verifyMatch(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decoded = jwt.verify(token, secret) as { userId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "guest_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid token" });
     }
     const guestUserId = decoded.userId;
@@ -364,6 +380,10 @@ async function verifySomeoneJoined(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decoded = jwt.verify(token, secret) as { userId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "guest_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid token" });
     }
 
@@ -396,6 +416,10 @@ async function finishMatch(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "match_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid match token" });
     }
 
@@ -431,6 +455,10 @@ async function cancelMatch(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "match_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid match token" });
     }
 
@@ -466,6 +494,10 @@ async function cancelWaitingMatches(req: VercelRequest, res: VercelResponse) {
     const secret = process.env.GUEST_SESSION_JWT_SECRET!;
     decodedGuest = jwt.verify(guestSessionToken, secret) as { userId: string };
   } catch {
+    res.setHeader(
+      "Set-Cookie",
+      "guest_session_token=; Max-Age=0; Path=/; HttpOnly"
+    );
     return res.status(401).json({ message: "Invalid guest session token" });
   }
 
@@ -498,6 +530,10 @@ async function getCurrentMatch(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "match_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid match token" });
     }
 
@@ -556,10 +592,18 @@ async function getCurrentPlayer(req: VercelRequest, res: VercelResponse) {
         userId: string;
       };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "guest_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid guest session token" });
     }
 
     if (!matchToken) {
+      res.setHeader(
+        "Set-Cookie",
+        "match_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(400).json({ message: "No match token provided" });
     }
 
@@ -568,6 +612,10 @@ async function getCurrentPlayer(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "match_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid match token" });
     }
     const matchId = decodedMatch.matchId;
@@ -604,6 +652,10 @@ async function getAllSlots(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "match_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid match token" });
     }
 
@@ -743,6 +795,10 @@ async function markSlotsAsMatched(req: VercelRequest, res: VercelResponse) {
         userId: string;
       };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "guest_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid token" });
     }
 
@@ -750,6 +806,10 @@ async function markSlotsAsMatched(req: VercelRequest, res: VercelResponse) {
       const secret = process.env.GUEST_SESSION_JWT_SECRET!;
       decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
     } catch {
+      res.setHeader(
+        "Set-Cookie",
+        "match_session_token=; Max-Age=0; Path=/; HttpOnly"
+      );
       return res.status(401).json({ message: "Invalid match token" });
     }
 
