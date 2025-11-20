@@ -338,6 +338,12 @@ export default function MatchPage() {
     };
 
     const updateMatch = () => {
+      if (!match) return;
+      if (
+        (isItFirstPlayerTurn && amIPlayerOne) ||
+        (!isItFirstPlayerTurn && !amIPlayerOne)
+      )
+        return;
       getCurrentMatch();
     };
 

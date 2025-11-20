@@ -61,6 +61,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(405).json({ message: "Method not allowed" });
         return getCurrentMatch(req, res);
 
+      case "get-current-player":
+        if (req.method !== "GET")
+          return res.status(405).json({ message: "Method not allowed" });
+        return getCurrentPlayer(req, res);
+
       case "get-all-slots":
         if (req.method !== "GET")
           return res.status(405).json({ message: "Method not allowed" });
@@ -96,8 +101,8 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
     const { player1Id } = req.body;
 
     const [result] = await pool.execute(
-      "INSERT INTO matches (player1_id, player1_score, player2_id, player2_score, state) VALUES (?, ?, ?, ?, ?)",
-      [player1Id, 0, null, 0, "waiting"]
+      "INSERT INTO matches (player1_id, player1_score, player2_id, player2_score, player_turn, state) VALUES (?, ?, ?, ?, ?, ?)",
+      [player1Id, 0, null, 0, player1Id, "waiting"]
     );
 
     const matchId = (result as any).insertId;
@@ -197,6 +202,7 @@ async function createMatch(req: VercelRequest, res: VercelResponse) {
       player1Score: 0,
       player2Id: null,
       player2Score: 0,
+      playerTurn: player1Id,
       state: "waiting",
     });
   } finally {
@@ -457,10 +463,64 @@ async function getCurrentMatch(req: VercelRequest, res: VercelResponse) {
       player2IconNumber: (match as any).player2_icon_number,
       player1Score: (match as any).player1_score,
       player2Score: (match as any).player2_score,
+      playerTurn: (match as any).player_turn,
       state: (match as any).state,
       createdAt: (match as any).created_at,
       updatedAt: (match as any).updated_at,
     });
+  } finally {
+    await pool.end();
+  }
+}
+
+async function getCurrentPlayer(req: VercelRequest, res: VercelResponse) {
+  const pool = getDB();
+  try {
+    const guestSessionToken = req.cookies?.["guest_session_token"];
+    const matchToken = req.cookies?.["match_session_token"];
+
+    if (!guestSessionToken) {
+      return res
+        .status(400)
+        .json({ message: "No guest session token provided" });
+    }
+
+    let decodedGuest: { userId: string };
+    try {
+      const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+      decodedGuest = jwt.verify(guestSessionToken, secret) as {
+        userId: string;
+      };
+    } catch {
+      return res.status(401).json({ message: "Invalid guest session token" });
+    }
+
+    if (!matchToken) {
+      return res.status(400).json({ message: "No match token provided" });
+    }
+
+    let decodedMatch: { matchId: string };
+    try {
+      const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+      decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
+    } catch {
+      return res.status(401).json({ message: "Invalid match token" });
+    }
+    const matchId = decodedMatch.matchId;
+
+    const [rows] = await pool.execute(
+      "SELECT player_turn FROM matches WHERE match_id = ?",
+      [matchId]
+    );
+    if (!rows || (Array.isArray(rows) && rows.length === 0)) {
+      return res.status(404).json({ message: "Match not found" });
+    }
+    const match = Array.isArray(rows) ? rows[0] : rows;
+    const isFirstPlayerTurn =
+      (match as any).player_turn === (match as any).player1_id;
+    const amIPlayerOne = (match as any).player1_id === decodedGuest.userId;
+
+    return res.status(200).json({ isFirstPlayerTurn, amIPlayerOne });
   } finally {
     await pool.end();
   }
@@ -538,13 +598,9 @@ async function resetSlots(req: VercelRequest, res: VercelResponse) {
       `UPDATE match_grid_slots SET state = ? WHERE slot_id IN (${placeholders})`,
       ["hidden", ...slotIds]
     );
-    return res
-      .status(200)
-      .json({
-        message: "Slots reset successfully",
-        query: `UPDATE match_grid_slots SET state = ? WHERE slot_id IN (${placeholders})`,
-        params: ["hidden", ...slotIds],
-      });
+    return res.status(200).json({
+      message: "Slots reset successfully",
+    });
   } finally {
     await pool.end();
   }
