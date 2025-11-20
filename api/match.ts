@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import mysql from "mysql2/promise";
 import jwt from "jsonwebtoken";
+import { Query } from "node_modules/mysql2/typings/mysql/lib/protocol/sequences/Query";
 
 function getDB() {
   return mysql.createPool({
@@ -509,7 +510,7 @@ async function getCurrentPlayer(req: VercelRequest, res: VercelResponse) {
     const matchId = decodedMatch.matchId;
 
     const [rows] = await pool.execute(
-      "SELECT player_turn FROM matches WHERE match_id = ?",
+      "SELECT player_turn, player1_id FROM matches WHERE match_id = ?",
       [matchId]
     );
     if (!rows || (Array.isArray(rows) && rows.length === 0)) {
@@ -520,7 +521,7 @@ async function getCurrentPlayer(req: VercelRequest, res: VercelResponse) {
       (match as any).player_turn === (match as any).player1_id;
     const amIPlayerOne = (match as any).player1_id === decodedGuest.userId;
 
-    return res.status(200).json({ isFirstPlayerTurn, amIPlayerOne });
+    return res.status(200).json({ isFirstPlayerTurn, amIPlayerOne, match });
   } finally {
     await pool.end();
   }
@@ -598,6 +599,54 @@ async function resetSlots(req: VercelRequest, res: VercelResponse) {
       `UPDATE match_grid_slots SET state = ? WHERE slot_id IN (${placeholders})`,
       ["hidden", ...slotIds]
     );
+
+    // Change turn to the other player
+    const guestSessionToken = req.cookies?.["guest_session_token"];
+    const matchToken = req.cookies?.["match_session_token"];
+    if (!guestSessionToken || !matchToken) {
+      return res
+        .status(400)
+        .json({ message: "Missing session tokens for turn change" });
+    }
+    let decodedGuest: { userId: string };
+    let decodedMatch: { matchId: string };
+
+    try {
+      const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+      decodedGuest = jwt.verify(guestSessionToken, secret) as {
+        userId: string;
+      };
+      decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
+    } catch {
+      return res.status(401).json({ message: "Invalid session tokens" });
+    }
+
+    const matchId = decodedMatch.matchId;
+
+    const [rows] = await pool.execute(
+      "SELECT player1_id, player2_id, player_turn FROM matches WHERE match_id = ?",
+      [matchId]
+    );
+
+    if (!rows || (Array.isArray(rows) && rows.length === 0)) {
+      return res
+        .status(404)
+        .json({ message: "Match not found for turn change" });
+    }
+
+    const match = Array.isArray(rows) ? rows[0] : rows;
+    const currentTurnPlayerId = (match as any).player_turn;
+    const player1Id = (match as any).player1_id;
+    const player2Id = (match as any).player2_id;
+
+    const newTurnPlayerId =
+      currentTurnPlayerId === player1Id ? player2Id : player1Id;
+
+    await pool.execute(
+      "UPDATE matches SET player_turn = ? WHERE match_id = ?",
+      [newTurnPlayerId, matchId]
+    );
+
     return res.status(200).json({
       message: "Slots reset successfully",
     });
