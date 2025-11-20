@@ -543,6 +543,16 @@ export default function MatchPage() {
         setFinished={setFinished}
         finishMatch={finishMatch}
       />
+      {finished && (
+        <button
+          className="mt-6 px-6 py-3 bg-green-500 text-white font-bold rounded-lg shadow-lg hover:bg-green-600 transition-colors"
+          onClick={() => {
+            window.location.href = "/game";
+          }}
+        >
+          Volver
+        </button>
+      )}
     </div>
   );
 }
