@@ -213,7 +213,7 @@ export default function Game() {
               className="mt-8 px-6 sm:px-12 py-3 sm:py-5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg sm:text-2xl font-bold rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-red-500/50 cursor-pointer border-2 border-red-400 w-[90%] sm:w-auto max-w-[600px]"
               onClick={async () => {
                 setIsLookingForMatch(false);
-                cancelMatch(matchIdCreated);
+                cancelMatch();
               }}
             >
               <X size={24} className="inline-block mr-2 sm:w-8 sm:h-8" />

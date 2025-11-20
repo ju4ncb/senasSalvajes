@@ -22,8 +22,8 @@ interface MatchFull extends Match {
 interface MatchContextType {
   match: Match | null | undefined;
   createMatch: (player1Id: number) => Promise<number>;
-  finishMatch: (matchId: number) => Promise<void>;
-  cancelMatch: (matchId: number) => Promise<void>;
+  finishMatch: () => Promise<void>;
+  cancelMatch: () => Promise<void>;
   getAllSlots: () => Promise<any[]>;
   getCurrentMatch: () => Promise<void>;
   flipSlot: (slotId: number) => Promise<void>;
@@ -34,6 +34,10 @@ interface MatchContextType {
 const MatchContext = createContext<MatchContextType | null>(null);
 
 export const MatchProvider = ({ children }: { children: React.ReactNode }) => {
+  useEffect(() => {
+    cancelMatch(); // Cancel any existing match on mount
+  }, []);
+
   const [match, setMatch] = useState<MatchFull | Match | null | undefined>(
     undefined
   );
@@ -91,14 +95,13 @@ export const MatchProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const finishMatch = async (matchId: number) => {
+  const finishMatch = async () => {
     const res = await fetch("/api/match?action=finish", {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ matchId }),
     });
     if (res.ok) {
       setMatch(null);
@@ -112,14 +115,13 @@ export const MatchProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const cancelMatch = async (matchId: number) => {
+  const cancelMatch = async () => {
     const res = await fetch("/api/match?action=cancel", {
       method: "POST",
       credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ matchId }),
     });
     if (res.ok) {
       setMatch(null);

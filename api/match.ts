@@ -381,7 +381,17 @@ async function verifySomeoneJoined(req: VercelRequest, res: VercelResponse) {
 async function finishMatch(req: VercelRequest, res: VercelResponse) {
   const pool = getDB();
   try {
-    const { matchId } = req.body;
+    const matchToken = req.cookies?.["match_session_token"];
+
+    let decodedMatch: { matchId: string };
+    try {
+      const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+      decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
+    } catch {
+      return res.status(401).json({ message: "Invalid match token" });
+    }
+
+    const matchId = decodedMatch.matchId;
 
     await pool.execute(
       "UPDATE matches SET state = ? WHERE match_id = ? AND state = ?",
@@ -402,7 +412,21 @@ async function finishMatch(req: VercelRequest, res: VercelResponse) {
 async function cancelMatch(req: VercelRequest, res: VercelResponse) {
   const pool = getDB();
   try {
-    const { matchId } = req.body;
+    const matchToken = req.cookies?.["match_session_token"];
+
+    if (!matchToken) {
+      return res.status(400).json({ message: "No match token provided" });
+    }
+
+    let decodedMatch: { matchId: string };
+    try {
+      const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+      decodedMatch = jwt.verify(matchToken, secret) as { matchId: string };
+    } catch {
+      return res.status(401).json({ message: "Invalid match token" });
+    }
+
+    const matchId = decodedMatch.matchId;
 
     await pool.execute(
       "UPDATE matches SET state = ? WHERE match_id = ? AND state IN (?, ?)",

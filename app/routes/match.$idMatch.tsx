@@ -184,6 +184,7 @@ const GridCards = ({
   markSlotsAsMatched,
   setMatched,
   setFinished,
+  finishMatch,
 }: {
   cards: CardDetails[][];
   isItFirstPlayerTurn: boolean;
@@ -195,6 +196,7 @@ const GridCards = ({
   markSlotsAsMatched: (slotIds: number[]) => Promise<void>;
   setMatched: React.Dispatch<React.SetStateAction<boolean>>;
   setFinished: React.Dispatch<React.SetStateAction<boolean>>;
+  finishMatch: () => Promise<void>;
 }) => {
   const [flippedCard1, setFlippedCard1] = useState<{
     row: number;
@@ -258,6 +260,7 @@ const GridCards = ({
         );
         if (allMatched) {
           setFinished(true);
+          await finishMatch();
         }
       } else {
         // Not a match - hide cards after a delay
@@ -314,6 +317,7 @@ const MatchContent = ({
   resetSlots,
   markSlotsAsMatched,
   setFinished,
+  finishMatch,
 }: {
   cards: CardDetails[][];
   isItFirstPlayerTurn: boolean;
@@ -325,6 +329,7 @@ const MatchContent = ({
   resetSlots: (slotIds: number[]) => Promise<void>;
   markSlotsAsMatched: (slotIds: number[]) => Promise<void>;
   setFinished: React.Dispatch<React.SetStateAction<boolean>>;
+  finishMatch: () => Promise<void>;
 }) => {
   return (
     <div className="mt-6">
@@ -339,6 +344,7 @@ const MatchContent = ({
         amIPlayerOne={amIPlayerOne}
         finished={finished}
         setFinished={setFinished}
+        finishMatch={finishMatch}
       />
     </div>
   );
@@ -352,6 +358,7 @@ export default function MatchPage() {
     flipSlot,
     resetSlots,
     markSlotsAsMatched,
+    finishMatch,
   } = useMatch();
   const [isItFirstPlayerTurn, setIsItFirstPlayerTurn] =
     useState<boolean>(false);
@@ -534,6 +541,7 @@ export default function MatchPage() {
         setMatched={setMatched}
         finished={finished}
         setFinished={setFinished}
+        finishMatch={finishMatch}
       />
     </div>
   );
