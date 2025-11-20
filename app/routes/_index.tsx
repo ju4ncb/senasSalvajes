@@ -2,6 +2,7 @@ import { Navigate } from "react-router";
 import type { Route } from "./+types/_index";
 import GreetingHome from "~/components/GreetingHome";
 import { useGuestUser } from "~/contexts/guestUserContext";
+import { useEffect } from "react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -16,9 +17,12 @@ export function meta({}: Route.MetaArgs) {
 export default function Home() {
   const { guestUser } = useGuestUser();
 
-  if (guestUser !== null && guestUser !== undefined) {
-    return <Navigate to="/game" replace={true} />;
-  }
+  useEffect(() => {
+    if (guestUser !== null && guestUser !== undefined) {
+      window.location.href = "/game";
+      return;
+    }
+  }, [guestUser]);
 
   return (
     <>
