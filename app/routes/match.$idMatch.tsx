@@ -397,6 +397,7 @@ export default function MatchPage() {
 
     const updateMatch = () => {
       if (!match) return;
+      console.log(matched, isItFirstPlayerTurn, amIPlayerOne);
       if (
         ((isItFirstPlayerTurn && amIPlayerOne) ||
           (!isItFirstPlayerTurn && !amIPlayerOne)) &&
@@ -487,9 +488,10 @@ export default function MatchPage() {
   }, [match]);
 
   useEffect(() => {
-    if (!match) {
-      getCurrentMatch();
+    async function fetchMatchDetails() {
+      await getCurrentMatch();
     }
+    fetchMatchDetails();
   }, []);
 
   const [currentMatch, setCurrentMatch] = useState<MatchFull | null>(null);
