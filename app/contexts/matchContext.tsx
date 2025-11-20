@@ -35,7 +35,13 @@ const MatchContext = createContext<MatchContextType | null>(null);
 
 export const MatchProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
-    cancelMatch(); // Cancel any existing match on mount
+    const cancelWaitingMatches = async () => {
+      await fetch("/api/match?action=cancel-waiting-matches", {
+        method: "GET",
+        credentials: "include",
+      });
+    };
+    cancelWaitingMatches();
   }, []);
 
   const [match, setMatch] = useState<MatchFull | Match | null | undefined>(

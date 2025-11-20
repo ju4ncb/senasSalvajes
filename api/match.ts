@@ -56,6 +56,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(405).json({ message: "Method not allowed" });
         return cancelMatch(req, res);
 
+      case "cancel-waiting-matches":
+        if (req.method !== "GET")
+          return res.status(405).json({ message: "Method not allowed" });
+        return cancelWaitingMatches(req, res);
+
       case "get-current-match":
         if (req.method !== "GET")
           return res.status(405).json({ message: "Method not allowed" });
@@ -439,6 +444,38 @@ async function cancelMatch(req: VercelRequest, res: VercelResponse) {
     );
 
     return res.status(200).json({ message: "Match cancelled successfully" });
+  } finally {
+    await pool.end();
+  }
+}
+
+async function cancelWaitingMatches(req: VercelRequest, res: VercelResponse) {
+  const pool = getDB();
+  const guestSessionToken = req.cookies?.["guest_session_token"];
+
+  if (!guestSessionToken) {
+    return res.status(400).json({ message: "No guest session token provided" });
+  }
+
+  let decodedGuest: { userId: string };
+
+  try {
+    const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+    decodedGuest = jwt.verify(guestSessionToken, secret) as { userId: string };
+  } catch {
+    return res.status(401).json({ message: "Invalid guest session token" });
+  }
+
+  const userId = decodedGuest.userId;
+
+  try {
+    await pool.execute(
+      "UPDATE matches SET state = ? WHERE state = ? AND player1_id = ?",
+      ["cancelled", "waiting", userId]
+    );
+    return res
+      .status(200)
+      .json({ message: "Waiting matches cancelled successfully" });
   } finally {
     await pool.end();
   }
