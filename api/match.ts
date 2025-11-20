@@ -538,7 +538,13 @@ async function resetSlots(req: VercelRequest, res: VercelResponse) {
       `UPDATE match_grid_slots SET state = ? WHERE slot_id IN (${placeholders})`,
       ["hidden", ...slotIds]
     );
-    return res.status(200).json({ message: "Slots reset successfully" });
+    return res
+      .status(200)
+      .json({
+        message: "Slots reset successfully",
+        query: `UPDATE match_grid_slots SET state = ? WHERE slot_id IN (${placeholders})`,
+        params: ["hidden", ...slotIds],
+      });
   } finally {
     await pool.end();
   }
