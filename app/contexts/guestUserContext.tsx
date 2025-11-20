@@ -14,6 +14,7 @@ interface GuestUserContextType {
   login: () => void;
   logout: () => void;
   verifyIfInMatch: () => Promise<number>;
+  verifyIfSomeoneJoined: () => Promise<number>;
   joinMatch: (matchId: string) => Promise<void>;
 }
 
@@ -50,7 +51,20 @@ export const GuestUserProvider = ({
 
   const verifyIfInMatch = async () => {
     if (!guestUser) return -1;
-    const res = await fetch("/api/match?action=verify", {
+    const res = await fetch("/api/match?action=verify-in-match", {
+      method: "GET",
+      credentials: "include",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.matchId as number;
+    }
+    return -1;
+  };
+
+  const verifyIfSomeoneJoined = async () => {
+    if (!guestUser) return -1;
+    const res = await fetch("/api/match?action=verify-someone-joined", {
       method: "GET",
       credentials: "include",
     });
@@ -95,6 +109,7 @@ export const GuestUserProvider = ({
       value={{
         guestUser: guestUser,
         verifyIfInMatch,
+        verifyIfSomeoneJoined,
         login: verifyGuestUser,
         logout,
         joinMatch,

@@ -51,11 +51,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // -------------------------------------------------
       // VERIFY MATCH
       // -------------------------------------------------
-      case "verify":
+      case "verify-in-match":
         if (req.method !== "GET")
           return res.status(405).json({ message: "Method not allowed" });
 
         return verifyMatch(req, res);
+
+      // -------------------------------------------------
+      // VERIFY SOMEONE JOINED
+      // -------------------------------------------------
+      case "verify-someone-joined":
+        if (req.method !== "GET")
+          return res.status(405).json({ message: "Method not allowed" });
+
+        return verifySomeoneJoined(req, res);
 
       // -------------------------------------------------
       // FINISH MATCH
@@ -206,6 +215,40 @@ async function verifyMatch(req: VercelRequest, res: VercelResponse) {
     return res
       .status(404)
       .json({ message: "No active match found for this user" });
+
+  const match = Array.isArray(rows) ? rows[0] : rows;
+  return res.status(200).json({ matchId: (match as any).match_id });
+}
+
+async function verifySomeoneJoined(req: VercelRequest, res: VercelResponse) {
+  const pool = getDB();
+  const token = req.cookies?.["guest_session_token"];
+
+  if (!token) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  let decoded: { userId: string };
+  try {
+    const secret = process.env.GUEST_SESSION_JWT_SECRET!;
+    decoded = jwt.verify(token, secret) as {
+      userId: string;
+    };
+  } catch {
+    return res.status(401).json({ message: "Invalid token" });
+  }
+
+  const guestUserId = decoded.userId;
+
+  const [rows] = await pool.execute(
+    "SELECT * FROM matches WHERE player1_id = ? AND state = 'playing'",
+    [guestUserId]
+  );
+
+  if (!rows || (Array.isArray(rows) && rows.length === 0))
+    return res
+      .status(404)
+      .json({ message: "No match with a second player found for this user" });
 
   const match = Array.isArray(rows) ? rows[0] : rows;
   return res.status(200).json({ matchId: (match as any).match_id });

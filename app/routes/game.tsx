@@ -120,7 +120,10 @@ const Leaderboard = () => {
 };
 
 export default function Game() {
-  const { guestUser, verifyIfInMatch, joinMatch } = useGuestUser();
+  const { guestUser, verifyIfInMatch, verifyIfSomeoneJoined, joinMatch } =
+    useGuestUser();
+
+  const { cancelMatch, createMatch } = useMatch();
 
   if (!guestUser) {
     return <LoadingScreen />;
@@ -134,9 +137,9 @@ export default function Game() {
     randomProfileIconNumber: 3,
   };
 
+  const [matchIdCreated, setMatchIdCreated] = useState<number>(-1);
   const [matchIdJoined, setMatchIdJoined] = useState<number>(-1);
   const [isLookingForMatch, setIsLookingForMatch] = useState<boolean>(false);
-  const [matchCreated, setMatchCreated] = useState<boolean>(false);
 
   useEffect(() => {
     // Check if the guest user is already in a match
@@ -149,7 +152,20 @@ export default function Game() {
     checkMatchStatus();
   }, []);
 
-  const { createMatch } = useMatch();
+  // If looking for match, repeatedly verify if someone joined
+  useEffect(() => {
+    if (!isLookingForMatch || matchIdCreated !== -1) return;
+    const interval = setInterval(async () => {
+      const matchId = await verifyIfSomeoneJoined();
+      if (matchId !== -1) {
+        setMatchIdJoined(matchId);
+        setIsLookingForMatch(false);
+        clearInterval(interval);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isLookingForMatch, matchIdCreated]);
 
   const handleMatchButtonClick = async () => {
     setIsLookingForMatch(true);
@@ -174,11 +190,8 @@ export default function Game() {
     }
 
     // If no available match, create a new one
-    setMatchCreated(true);
     const matchId = await createMatch(userId);
-    if (matchId) {
-      window.location.assign(`/match/${matchId}`);
-    } else {
+    if (!matchId) {
       Swal.fire({
         icon: "error",
         title: "Error",
@@ -186,6 +199,7 @@ export default function Game() {
       });
       setIsLookingForMatch(false);
     }
+    setMatchIdCreated(Number(matchId));
   };
 
   return (
@@ -206,8 +220,14 @@ export default function Game() {
             </p>
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-red-500"></div>
           </div>
-          {matchCreated && (
-            <button className="mt-8 px-6 sm:px-12 py-3 sm:py-5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg sm:text-2xl font-bold rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-red-500/50 cursor-pointer border-2 border-red-400 w-[90%] sm:w-auto max-w-[600px]">
+          {matchIdCreated !== -1 && (
+            <button
+              className="mt-8 px-6 sm:px-12 py-3 sm:py-5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg sm:text-2xl font-bold rounded-xl shadow-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-red-500/50 cursor-pointer border-2 border-red-400 w-[90%] sm:w-auto max-w-[600px]"
+              onClick={async () => {
+                setIsLookingForMatch(false);
+                cancelMatch(matchIdCreated);
+              }}
+            >
               <X size={24} className="inline-block mr-2 sm:w-8 sm:h-8" />
               <span className="text-xl sm:text-2xl font-bold">Cancelar</span>
             </button>
