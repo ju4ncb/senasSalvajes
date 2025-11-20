@@ -116,10 +116,10 @@ const HeaderMatch = ({
   return (
     <div className="flex flex-col lg:flex-row justify-around items-center gap-4 mb-4 bg-white/10 p-4 rounded-lg shadow-md">
       <div className="flex flex-col items-center mb-2 lg:mb-0">
-        <h1 className="text-2xl sm:text-3xl font-bold text-center lg:text-left">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center lg:text-left text-white">
           Detalles de la partida
         </h1>
-        <h2>
+        <h2 className="text-white">
           {finished
             ? `Partida terminada, ${
                 player1Score > player2Score
